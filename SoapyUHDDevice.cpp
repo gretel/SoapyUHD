@@ -16,6 +16,7 @@
 #include <uhd/usrp/multi_usrp.hpp>
 #include <uhd/property_tree.hpp>
 #include <cctype>
+#include <format>
 #include <iostream>
 
 /***********************************************************************
@@ -64,7 +65,7 @@ public:
             for (const std::string &key : info.keys())
             {
                 if (key.size() > 3 and key.substr(0, 3) == "tx_")
-                    out[str(boost::format("tx%d_%s") % i % key.substr(3))] = info[key];
+                    out[std::format("tx{}_{}", i, key.substr(3))] = info[key];
                 else out[key] = info[key];
             }
         }
@@ -74,7 +75,7 @@ public:
             for (const std::string &key : info.keys())
             {
                 if (key.size() > 3 and key.substr(0, 3) == "rx_")
-                    out[str(boost::format("rx%d_%s") % i % key.substr(3))] = info[key];
+                    out[std::format("rx{}_{}", i, key.substr(3))] = info[key];
                 else out[key] = info[key];
             }
         }
@@ -709,7 +710,7 @@ public:
         {
             //read the range from the property tree
             uhd::property_tree::sptr tree = _get_tree();
-            const std::string path = str(boost::format("/mboards/0/%s_dsps/%u/freq/range") % ((dir == SOAPY_SDR_TX)?"tx":"rx") % channel);
+            const std::string path = std::format("/mboards/0/{}_dsps/{}/freq/range", (dir == SOAPY_SDR_TX)?"tx":"rx", channel);
             if (tree->exists(path)) return metaRangeToRangeList(tree->access<uhd::meta_range_t>(path).get());
             else return SoapySDR::RangeList(1, SoapySDR::Range(-getSampleRate(dir, channel)/2, getSampleRate(dir, channel)/2));
         }
@@ -992,12 +993,8 @@ public:
         auto subdevSpec = (dir == SOAPY_SDR_TX) ? _dev->get_tx_subdev_spec(0).at(channel)
                                                 : _dev->get_rx_subdev_spec(0).at(channel);
 
-        const std::string path =
-            str(boost::format("/mboards/0/%s_frontends/%s")
-                % directionName
-                % subdevSpec.db_name);
-
-        return path;
+        return std::format("/mboards/0/{}_frontends/{}",
+            directionName, subdevSpec.db_name);
     }
 
     std::string __getDBoardFEPropTreePath(const int dir, const size_t channel) const
@@ -1007,13 +1004,8 @@ public:
         auto subdevSpec = (dir == SOAPY_SDR_TX) ? _dev->get_tx_subdev_spec(0).at(channel)
                                                 : _dev->get_rx_subdev_spec(0).at(channel);
 
-        const std::string path =
-            str(boost::format("/mboards/0/dboards/%s/%s_frontends/%s")
-                % subdevSpec.db_name
-                % directionName
-                % subdevSpec.sd_name);
-
-        return path;
+        return std::format("/mboards/0/dboards/{}/{}_frontends/{}",
+            subdevSpec.db_name, directionName, subdevSpec.sd_name);
     }
 
     bool __doesMBoardFEPropTreeEntryExist(const int dir, const size_t channel, const std::string &subpath) const
@@ -1112,13 +1104,13 @@ std::vector<SoapySDR::Kwargs> find_uhd(const SoapySDR::Kwargs &args_)
 
 SoapySDR::Device *make_uhd(const SoapySDR::Kwargs &args)
 {
-    if(std::string(UHD_VERSION_ABI_STRING) != uhd::get_abi_string()) throw std::runtime_error(str(boost::format(
+    if(std::string(UHD_VERSION_ABI_STRING) != uhd::get_abi_string()) throw std::runtime_error(std::format(
         "SoapySDR detected ABI compatibility mismatch with UHD library.\n"
-        "SoapySDR UHD support was build against ABI: %s,\n"
-        "but UHD library reports ABI: %s\n"
+        "SoapySDR UHD support was build against ABI: {},\n"
+        "but UHD library reports ABI: {}\n"
         "Suggestion: install an ABI compatible version of UHD,\n"
-        "or rebuild SoapySDR UHD support against this ABI version.\n"
-    ) % UHD_VERSION_ABI_STRING % uhd::get_abi_string()));
+        "or rebuild SoapySDR UHD support against this ABI version.\n",
+        UHD_VERSION_ABI_STRING, uhd::get_abi_string()));
     uhd::log::add_logger("SoapyUHDDevice", &SoapyUHDLogger);
     return new SoapyUHDDevice(uhd::usrp::multi_usrp::make(kwargsToDict(args)), args);
 }
