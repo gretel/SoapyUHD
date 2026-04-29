@@ -45,17 +45,7 @@ set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "")
 # Dependencies
 ########################################################################
 find_package(SoapySDR "0.7" NO_MODULE REQUIRED)
-find_package(UHD NO_MODULE)
-
-#try old-style find script
-if (NOT UHD_FOUND)
-    list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
-    find_package(UHD)
-endif()
-
-if (NOT UHD_FOUND)
-    message(FATAL_ERROR "UHD not found -- required for Soapy UHD support")
-endif()
+find_package(UHD 4.0 NO_MODULE REQUIRED)
 
 if (NOT UHD_ROOT)
     get_filename_component(UHD_ROOT "${UHD_INCLUDE_DIRS}/.." ABSOLUTE)
@@ -63,48 +53,9 @@ endif()
 message(STATUS "UHD root directory: ${UHD_ROOT}")
 message(STATUS "UHD include directories: ${UHD_INCLUDE_DIRS}")
 message(STATUS "UHD libraries: ${UHD_LIBRARIES}")
+message(STATUS "UHD version: ${UHD_VERSION}")
 
 set(UHD_FEATURE_DEFS "")
-
-message(STATUS "Checking uhd::device::register_device() API...")
-message(STATUS "  Reading ${UHD_INCLUDE_DIRS}/uhd/device.hpp...")
-file(READ ${UHD_INCLUDE_DIRS}/uhd/device.hpp device_hpp)
-string(FIND "${device_hpp}" "device_filter_t" has_device_filter)
-if ("${has_device_filter}" STREQUAL "-1")
-    message(STATUS "  has original API")
-else()
-    list(APPEND UHD_FEATURE_DEFS UHD_HAS_DEVICE_FILTER)
-    message(STATUS "  has filter API")
-endif()
-
-message(STATUS "Checking uhd::usrp::multi_usrp::set_rx_agc() API...")
-message(STATUS "  Reading ${UHD_INCLUDE_DIRS}/uhd/usrp/multi_usrp.hpp...")
-file(READ ${UHD_INCLUDE_DIRS}/uhd/usrp/multi_usrp.hpp multi_usrp_hpp)
-string(FIND "${multi_usrp_hpp}" "set_rx_agc" has_set_rx_agc)
-if ("${has_set_rx_agc}" STREQUAL "-1")
-    message(STATUS "  missing set_rx_agc() API")
-else()
-    list(APPEND UHD_FEATURE_DEFS UHD_HAS_SET_RX_AGC)
-    message(STATUS "  has set_rx_agc() API")
-endif()
-
-message(STATUS "Checking uhd::property::set_publisher() API...")
-message(STATUS "  Reading ${UHD_INCLUDE_DIRS}/uhd/property_tree.hpp...")
-file(READ ${UHD_INCLUDE_DIRS}/uhd/property_tree.hpp property_tree_hpp)
-string(FIND "${property_tree_hpp}" "set_publisher" has_set_publisher)
-if ("${has_set_publisher}" STREQUAL "-1")
-    message(STATUS "  missing set_publisher() API")
-else()
-    list(APPEND UHD_FEATURE_DEFS UHD_HAS_SET_PUBLISHER)
-    message(STATUS "  has set_publisher() API")
-endif()
-
-if (EXISTS "${UHD_INCLUDE_DIRS}/uhd/utils/msg.hpp")
-    list(APPEND UHD_FEATURE_DEFS UHD_HAS_MSG_HPP)
-    message(STATUS "  use msg.hpp for logging")
-else()
-    message(STATUS "  use log.hpp for logging")
-endif()
 
 ########################################################################
 # Setup boost
