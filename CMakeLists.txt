@@ -37,7 +37,7 @@ set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "")
 ########################################################################
 # Dependencies
 ########################################################################
-find_package(SoapySDR "0.6" NO_MODULE REQUIRED)
+find_package(SoapySDR "0.7" NO_MODULE REQUIRED)
 find_package(UHD NO_MODULE)
 
 #try old-style find script
