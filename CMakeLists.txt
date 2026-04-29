@@ -21,7 +21,7 @@
 ########################################################################
 # Project setup
 ########################################################################
-cmake_minimum_required(VERSION 2.8.12...3.10)
+cmake_minimum_required(VERSION 3.10...3.30)
 project(SoapyUHD CXX C)
 enable_testing()
 
