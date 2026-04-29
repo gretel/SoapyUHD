@@ -26,7 +26,6 @@
 #include <boost/format.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/bind.hpp>
-#include <boost/lexical_cast.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/algorithm/string.hpp>
 
@@ -67,7 +66,7 @@ public:
         uhd::usrp::subdev_spec_t spec;
         for (size_t ch = 0; ch < _device->getNumChannels(dir); ch++)
         {
-            const std::string chName(boost::lexical_cast<std::string>(ch));
+            const std::string chName(std::to_string(ch));
             spec.push_back(uhd::usrp::subdev_spec_pair_t(chName, chName));
         }
 
@@ -288,7 +287,7 @@ void UHDSoapyDevice::setupChannelHooks()
 
     for (size_t ch = 0; ch < numChannels; ch++)
     {
-        const std::string chName(boost::lexical_cast<std::string>(ch));
+        const std::string chName(std::to_string(ch));
         if (ch < numRxChannels)
             this->setupChannelHooks(SOAPY_SDR_RX, ch, kRxDirName, chName);
         else
