@@ -508,7 +508,7 @@ public:
             return __doesMBoardFEPropTreeEntryExist(dir, channel, "iq_balance/enable");
         }
 
-        return SoapySDR::Device::hasDCOffsetMode(dir, channel);
+        return SoapySDR::Device::hasIQBalanceMode(dir, channel);
     }
 
     void setIQBalanceMode(const int dir, const size_t channel, const bool automatic)
