@@ -57,9 +57,7 @@ message(STATUS "UHD root directory: ${UHD_ROOT}")
 message(STATUS "UHD include directories: ${UHD_INCLUDE_DIRS}")
 message(STATUS "UHD libraries: ${UHD_LIBRARIES}")
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(${SoapySDR_INCLUDE_DIRS})
-include_directories(${UHD_INCLUDE_DIRS})
+set(UHD_FEATURE_DEFS "")
 
 message(STATUS "Checking uhd::device::register_device() API...")
 message(STATUS "  Reading ${UHD_INCLUDE_DIRS}/uhd/device.hpp...")
@@ -68,7 +66,7 @@ string(FIND "${device_hpp}" "device_filter_t" has_device_filter)
 if ("${has_device_filter}" STREQUAL "-1")
     message(STATUS "  has original API")
 else()
-    add_definitions(-DUHD_HAS_DEVICE_FILTER)
+    list(APPEND UHD_FEATURE_DEFS UHD_HAS_DEVICE_FILTER)
     message(STATUS "  has filter API")
 endif()
 
@@ -79,7 +77,7 @@ string(FIND "${multi_usrp_hpp}" "set_rx_agc" has_set_rx_agc)
 if ("${has_set_rx_agc}" STREQUAL "-1")
     message(STATUS "  missing set_rx_agc() API")
 else()
-    add_definitions(-DUHD_HAS_SET_RX_AGC)
+    list(APPEND UHD_FEATURE_DEFS UHD_HAS_SET_RX_AGC)
     message(STATUS "  has set_rx_agc() API")
 endif()
 
@@ -90,12 +88,12 @@ string(FIND "${property_tree_hpp}" "set_publisher" has_set_publisher)
 if ("${has_set_publisher}" STREQUAL "-1")
     message(STATUS "  missing set_publisher() API")
 else()
-    add_definitions(-DUHD_HAS_SET_PUBLISHER)
+    list(APPEND UHD_FEATURE_DEFS UHD_HAS_SET_PUBLISHER)
     message(STATUS "  has set_publisher() API")
 endif()
 
 if (EXISTS "${UHD_INCLUDE_DIRS}/uhd/utils/msg.hpp")
-    add_definitions(-DUHD_HAS_MSG_HPP)
+    list(APPEND UHD_FEATURE_DEFS UHD_HAS_MSG_HPP)
     message(STATUS "  use msg.hpp for logging")
 else()
     message(STATUS "  use log.hpp for logging")
@@ -116,14 +114,18 @@ if(NOT Boost_FOUND)
     message(FATAL_ERROR "Boost not found -- required for Soapy UHD support")
 endif()
 
-ADD_DEFINITIONS(-DBOOST_ALL_DYN_LINK)
-
-include_directories(${Boost_INCLUDE_DIRS})
-link_directories(${Boost_LIBRARY_DIRS})
+list(APPEND UHD_FEATURE_DEFS BOOST_ALL_DYN_LINK)
 
 message(STATUS "Boost include directories: ${Boost_INCLUDE_DIRS}")
 message(STATUS "Boost library directories: ${Boost_LIBRARY_DIRS}")
 message(STATUS "Boost libraries: ${Boost_LIBRARIES}")
+
+set(SOAPY_UHD_INCLUDE_DIRS
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${SoapySDR_INCLUDE_DIRS}
+    ${UHD_INCLUDE_DIRS}
+    ${Boost_INCLUDE_DIRS}
+)
 
 ########################################################################
 # Build a Soapy module to support UHD devices
@@ -135,11 +137,15 @@ SOAPY_SDR_MODULE_UTIL(
         ${UHD_LIBRARIES}
         ${Boost_LIBRARIES}
 )
+target_include_directories(uhdSupport PRIVATE ${SOAPY_UHD_INCLUDE_DIRS})
+target_compile_definitions(uhdSupport PRIVATE ${UHD_FEATURE_DEFS})
 
 ########################################################################
 # Build a UHD module to support Soapy devices
 ########################################################################
 add_library(soapySupport MODULE UHDSoapyDevice.cpp)
+target_include_directories(soapySupport PRIVATE ${SOAPY_UHD_INCLUDE_DIRS})
+target_compile_definitions(soapySupport PRIVATE ${UHD_FEATURE_DEFS})
 target_link_libraries(soapySupport
     ${UHD_LIBRARIES}
     ${SoapySDR_LIBRARIES}
