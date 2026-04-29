@@ -219,6 +219,17 @@ public:
             streamArgs.push_back(underflowPolicyArg);
         }
 
+#if UHD_VERSION >= 4100000
+        SoapySDR::ArgInfo mtuArg;
+        mtuArg.key = "mtu";
+        mtuArg.value = "0";
+        mtuArg.name = "Override link MTU";
+        mtuArg.description = "Override the auto-detected link MTU (UHD >= 4.10). 0 = use detected value.";
+        mtuArg.units = "bytes";
+        mtuArg.type = SoapySDR::ArgInfo::INT;
+        streamArgs.push_back(mtuArg);
+#endif
+
         return streamArgs;
     }
 
