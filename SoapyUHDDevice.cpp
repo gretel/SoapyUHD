@@ -20,6 +20,7 @@
 #include <uhd/usrp/multi_usrp.hpp>
 #include <uhd/property_tree.hpp>
 #include <uhd/version.hpp>
+#include <boost/lexical_cast.hpp>
 #include <cctype>
 #include <iostream>
 

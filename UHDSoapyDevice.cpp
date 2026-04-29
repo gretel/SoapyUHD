@@ -35,6 +35,7 @@
 #include <boost/format.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/bind.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/algorithm/string.hpp>
 
