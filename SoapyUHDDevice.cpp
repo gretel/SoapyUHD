@@ -361,6 +361,9 @@ public:
 
         switch (md.event_code)
         {
+#if UHD_VERSION >= 4100000
+        case uhd::async_metadata_t::EVENT_CODE_OK: break;
+#endif
         case uhd::async_metadata_t::EVENT_CODE_BURST_ACK: flags |= SOAPY_SDR_END_BURST; break;
         case uhd::async_metadata_t::EVENT_CODE_UNDERFLOW: return SOAPY_SDR_UNDERFLOW;
         case uhd::async_metadata_t::EVENT_CODE_SEQ_ERROR: return SOAPY_SDR_CORRUPTION;

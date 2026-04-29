@@ -568,12 +568,12 @@ public:
         _device->closeStream(_stream);
     }
 
-    size_t get_num_channels(void) const
+    size_t get_num_channels(void) const override
     {
         return _nchan;
     }
 
-    size_t get_max_num_samps(void) const
+    size_t get_max_num_samps(void) const override
     {
         return _device->getStreamMTU(_stream);
     }
@@ -584,7 +584,7 @@ public:
         uhd::rx_metadata_t &md,
         const double timeout = 0.1,
         const bool one_packet = false
-    )
+    ) override
     {
         size_t total = 0;
         md.reset();
@@ -674,7 +674,7 @@ public:
         return total;
     }
 
-    void issue_stream_cmd(const uhd::stream_cmd_t &stream_cmd)
+    void issue_stream_cmd(const uhd::stream_cmd_t &stream_cmd) override
     {
         int flags = 0;
         if (not stream_cmd.stream_now) flags |= SOAPY_SDR_HAS_TIME;
@@ -758,12 +758,12 @@ public:
         _device->closeStream(_stream);
     }
 
-    size_t get_num_channels(void) const
+    size_t get_num_channels(void) const override
     {
         return _nchan;
     }
 
-    size_t get_max_num_samps(void) const
+    size_t get_max_num_samps(void) const override
     {
         return _device->getStreamMTU(_stream);
     }
@@ -773,7 +773,7 @@ public:
         size_t nsamps_per_buff,
         const uhd::tx_metadata_t &md,
         const double timeout = 0.1
-    )
+    ) override
     {
         //perform activation at the latest/on the first call to send
         if (not _active)
@@ -808,7 +808,7 @@ public:
         return total;
     }
 
-    bool recv_async_msg(uhd::async_metadata_t &md, double timeout = 0.1)
+    bool recv_async_msg(uhd::async_metadata_t &md, double timeout = 0.1) override
     {
         size_t chanMask = 0;
         int flags = 0;
