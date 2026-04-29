@@ -23,7 +23,7 @@
 #include <SoapySDR/Logger.hpp>
 
 #include <boost/foreach.hpp>
-#include <boost/format.hpp>
+#include <format>
 #include <boost/thread/mutex.hpp>
 #include <boost/bind.hpp>
 #include <boost/weak_ptr.hpp>
@@ -680,7 +680,7 @@ public:
         int ret = 0;
         if (activate) ret = _device->activateStream(_stream, flags, timeNs, numElems);
         else ret = _device->deactivateStream(_stream, flags, timeNs);
-        if (ret != 0) throw std::runtime_error(str(boost::format("UHDSoapyRxStream::issue_stream_cmd() = %d") % ret));
+        if (ret != 0) throw std::runtime_error(std::format("UHDSoapyRxStream::issue_stream_cmd() = {}", ret));
     }
 
     #if UHD_VERSION >= 4080000
@@ -769,7 +769,7 @@ public:
             for (size_t i = 0; i < _nchan; i++) _offsetBuffs[i] = ((char *)buffs[i]) + total*_elemSize;
             int ret = _device->writeStream(_stream, &(_offsetBuffs[0]), numElems, flags, timeNs, long(timeout*1e6));
             if (ret == SOAPY_SDR_TIMEOUT) break;
-            if (ret < 0) throw std::runtime_error(str(boost::format("UHDSoapyTxStream::send() = %d") % ret));
+            if (ret < 0) throw std::runtime_error(std::format("UHDSoapyTxStream::send() = {}", ret));
             total += ret;
         }
 
