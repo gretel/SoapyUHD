@@ -26,6 +26,7 @@ struct SoapyUHDStream
 {
     uhd::rx_streamer::sptr rx;
     uhd::tx_streamer::sptr tx;
+    size_t num_channels = 0;
 };
 
 /***********************************************************************
@@ -249,8 +250,16 @@ public:
 
         //create streamers
         SoapyUHDStream *stream = new SoapyUHDStream();
-        if (dir == SOAPY_SDR_TX) stream->tx = _dev->get_tx_stream(stream_args);
-        if (dir == SOAPY_SDR_RX) stream->rx = _dev->get_rx_stream(stream_args);
+        if (dir == SOAPY_SDR_TX)
+        {
+            stream->tx = _dev->get_tx_stream(stream_args);
+            stream->num_channels = stream->tx->get_num_channels();
+        }
+        if (dir == SOAPY_SDR_RX)
+        {
+            stream->rx = _dev->get_rx_stream(stream_args);
+            stream->num_channels = stream->rx->get_num_channels();
+        }
         return reinterpret_cast<SoapySDR::Stream *>(stream);
     }
 
@@ -307,11 +316,12 @@ public:
 
     int readStream(SoapySDR::Stream *handle, void * const *buffs, const size_t numElems, int &flags, long long &timeNs, const long timeoutUs)
     {
-        uhd::rx_streamer::sptr &stream = reinterpret_cast<SoapyUHDStream *>(handle)->rx;
+        SoapyUHDStream *streamObj = reinterpret_cast<SoapyUHDStream *>(handle);
+        uhd::rx_streamer::sptr &stream = streamObj->rx;
 
         //receive into buffers and metadata
         uhd::rx_metadata_t md;
-        uhd::rx_streamer::buffs_type stream_buffs(buffs, stream->get_num_channels());
+        uhd::rx_streamer::buffs_type stream_buffs(buffs, streamObj->num_channels);
         int ret = stream->recv(stream_buffs, numElems, md, timeoutUs/1e6, (flags & SOAPY_SDR_ONE_PACKET) != 0);
 
         //parse the metadata
@@ -335,7 +345,8 @@ public:
 
     int writeStream(SoapySDR::Stream *handle, const void * const *buffs, const size_t numElems, int &flags, const long long timeNs, const long timeoutUs)
     {
-        uhd::tx_streamer::sptr &stream = reinterpret_cast<SoapyUHDStream *>(handle)->tx;
+        SoapyUHDStream *streamObj = reinterpret_cast<SoapyUHDStream *>(handle);
+        uhd::tx_streamer::sptr &stream = streamObj->tx;
 
         //load metadata
         uhd::tx_metadata_t md;
@@ -344,7 +355,7 @@ public:
         md.time_spec = uhd::time_spec_t::from_ticks(timeNs, 1e9);
 
         //send buffers and metadata
-        uhd::tx_streamer::buffs_type stream_buffs(buffs, stream->get_num_channels());
+        uhd::tx_streamer::buffs_type stream_buffs(buffs, streamObj->num_channels);
         int ret = stream->send(stream_buffs, numElems, md, timeoutUs/1e6);
 
         flags = 0;
