@@ -27,6 +27,13 @@ enable_testing()
 
 set(CMAKE_CXX_STANDARD 14)
 
+option(BUILD_UHD_SUPPORT   "Build the SoapySDR-side module exposing UHD devices to SoapySDR"   ON)
+option(BUILD_SOAPY_SUPPORT "Build the UHD-side module exposing Soapy devices to UHD"          ON)
+
+if(NOT BUILD_UHD_SUPPORT AND NOT BUILD_SOAPY_SUPPORT)
+    message(FATAL_ERROR "Both BUILD_UHD_SUPPORT and BUILD_SOAPY_SUPPORT are OFF -- nothing to build.")
+endif()
+
 #select the release build type by default to get optimization flags
 if(NOT CMAKE_BUILD_TYPE)
    set(CMAKE_BUILD_TYPE "Release")
@@ -130,29 +137,33 @@ set(SOAPY_UHD_INCLUDE_DIRS
 ########################################################################
 # Build a Soapy module to support UHD devices
 ########################################################################
-SOAPY_SDR_MODULE_UTIL(
-    TARGET uhdSupport
-    SOURCES SoapyUHDDevice.cpp
-    LIBRARIES
-        ${UHD_LIBRARIES}
-        ${Boost_LIBRARIES}
-)
-target_include_directories(uhdSupport PRIVATE ${SOAPY_UHD_INCLUDE_DIRS})
-target_compile_definitions(uhdSupport PRIVATE ${UHD_FEATURE_DEFS})
+if(BUILD_UHD_SUPPORT)
+    SOAPY_SDR_MODULE_UTIL(
+        TARGET uhdSupport
+        SOURCES SoapyUHDDevice.cpp
+        LIBRARIES
+            ${UHD_LIBRARIES}
+            ${Boost_LIBRARIES}
+    )
+    target_include_directories(uhdSupport PRIVATE ${SOAPY_UHD_INCLUDE_DIRS})
+    target_compile_definitions(uhdSupport PRIVATE ${UHD_FEATURE_DEFS})
+endif()
 
 ########################################################################
 # Build a UHD module to support Soapy devices
 ########################################################################
-add_library(soapySupport MODULE UHDSoapyDevice.cpp)
-target_include_directories(soapySupport PRIVATE ${SOAPY_UHD_INCLUDE_DIRS})
-target_compile_definitions(soapySupport PRIVATE ${UHD_FEATURE_DEFS})
-target_link_libraries(soapySupport
-    ${UHD_LIBRARIES}
-    ${SoapySDR_LIBRARIES}
-    ${Boost_LIBRARIES})
-install(TARGETS soapySupport
-    DESTINATION ${UHD_ROOT}/lib${LIB_SUFFIX}/uhd/modules
-)
+if(BUILD_SOAPY_SUPPORT)
+    add_library(soapySupport MODULE UHDSoapyDevice.cpp)
+    target_include_directories(soapySupport PRIVATE ${SOAPY_UHD_INCLUDE_DIRS})
+    target_compile_definitions(soapySupport PRIVATE ${UHD_FEATURE_DEFS})
+    target_link_libraries(soapySupport
+        ${UHD_LIBRARIES}
+        ${SoapySDR_LIBRARIES}
+        ${Boost_LIBRARIES})
+    install(TARGETS soapySupport
+        DESTINATION ${UHD_ROOT}/lib${LIB_SUFFIX}/uhd/modules
+    )
+endif()
 
 ########################################################################
 # rpath setup - http://www.cmake.org/Wiki/CMake_RPATH_handling
