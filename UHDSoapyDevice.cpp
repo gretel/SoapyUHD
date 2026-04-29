@@ -111,20 +111,12 @@ public:
 
     uhd::meta_range_t get_bw_range(const int dir, const size_t chan)
     {
-        #ifdef SOAPY_SDR_API_HAS_GET_BANDWIDTH_RANGE
         return rangeListToMetaRange(_device->getBandwidthRange(dir, chan));
-        #else
-        return numberListToMetaRange(_device->listBandwidths(dir, chan));
-        #endif
     }
 
     uhd::meta_range_t get_rate_range(const int dir, const size_t chan)
     {
-        #ifdef SOAPY_SDR_API_HAS_GET_SAMPLE_RATE_RANGE
         return rangeListToMetaRange(_device->getSampleRateRange(dir, chan));
-        #else
-        return numberListToMetaRange(_device->listSampleRates(dir, chan));
-        #endif
     }
 
     void set_sample_rate(const int dir, const size_t chan, const double rate)
@@ -454,14 +446,12 @@ void UHDSoapyDevice::setupChannelHooks(const int dir, const size_t chan, const s
             .subscribe(boost::bind(&SoapySDR::Device::setIQBalance, _device, dir, chan, _1));
     }
 
-    #ifdef SOAPY_SDR_API_HAS_IQ_BALANCE_MODE
     if (_device->hasIQBalanceMode(dir, chan))
     {
         _tree->create<bool>(rf_fe_path / "iq_balance" / "enable")
             .publish(boost::bind(&SoapySDR::Device::getIQBalanceMode, _device, dir, chan))
             .subscribe(boost::bind(&SoapySDR::Device::setIQBalanceMode, _device, dir, chan, _1));
     }
-    #endif
 }
 
 void UHDSoapyDevice::setupFakeChannelHooks(const int dir, const size_t /*chan*/, const std::string &dirName, const std::string &chName)
