@@ -722,7 +722,6 @@ private:
     const size_t _nchan;
     const size_t _elemSize;
     std::vector<void *> _offsetBuffs;
-    bool _doErrorOnNextRecv;
     bool _nextTimeValid;
     uhd::time_spec_t _nextTime;
     const double &_sampRate;
