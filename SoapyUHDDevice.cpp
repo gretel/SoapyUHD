@@ -12,11 +12,7 @@
 #include <SoapySDR/Logger.hpp>
 #include <uhd/version.hpp>
 #include <uhd/device.hpp>
-#ifdef UHD_HAS_MSG_HPP
-#include <uhd/utils/msg.hpp>
-#else
 #include <uhd/utils/log_add.hpp>
-#endif
 #include <uhd/usrp/multi_usrp.hpp>
 #include <uhd/property_tree.hpp>
 #include <uhd/version.hpp>
@@ -545,21 +541,17 @@ public:
 
     bool hasGainMode(const int dir, const size_t channel) const
     {
-        #ifdef UHD_HAS_SET_RX_AGC
         if (dir == SOAPY_SDR_TX) return false;
         if (dir == SOAPY_SDR_RX)
         {
             return __doesDBoardFEPropTreeEntryExist(dir, channel, "gain/agc/enable");
         }
-        #endif
         return SoapySDR::Device::hasGainMode(dir, channel);
     }
 
     void setGainMode(const int dir, const size_t channel, const bool automatic)
     {
-        #ifdef UHD_HAS_SET_RX_AGC
         if (dir == SOAPY_SDR_RX) return _dev->set_rx_agc(automatic, channel);
-        #endif
         return SoapySDR::Device::setGainMode(dir, channel, automatic);
     }
 
@@ -1043,11 +1035,7 @@ private:
 
     uhd::property_tree::sptr _get_tree(void) const
     {
-        #if UHD_VERSION >= 4000000
         return _dev->get_tree();
-        #else
-        return _dev->get_device()->get_tree();
-        #endif
     }
 
     uhd::usrp::multi_usrp::sptr _dev;
@@ -1058,20 +1046,6 @@ private:
 /***********************************************************************
  * Register into logger
  **********************************************************************/
-#ifdef UHD_HAS_MSG_HPP
-static void SoapyUHDLogger(uhd::msg::type_t t, const std::string &s)
-{
-    if (s.empty()) return;
-    if (s[s.size()-1] == '\n') return SoapyUHDLogger(t, s.substr(0, s.size()-1));
-    switch (t)
-    {
-    case uhd::msg::status: SoapySDR::log(SOAPY_SDR_INFO, s); break;
-    case uhd::msg::warning: SoapySDR::log(SOAPY_SDR_WARNING, s); break;
-    case uhd::msg::error: SoapySDR::log(SOAPY_SDR_ERROR, s); break;
-    case uhd::msg::fastpath: SoapySDR::log(SOAPY_SDR_SSI, s); break;
-    }
-}
-#else
 static void SoapyUHDLogger(const uhd::log::logging_info &info)
 {
     //build a log message formatted from the information
@@ -1101,7 +1075,6 @@ static void SoapyUHDLogger(const uhd::log::logging_info &info)
     default: break;
     }
 }
-#endif
 
 /***********************************************************************
  * Registration
@@ -1114,11 +1087,7 @@ std::vector<SoapySDR::Kwargs> find_uhd(const SoapySDR::Kwargs &args_)
     args[SOAPY_UHD_NO_DEEPER] = "";
 
     //perform the discovery
-    #ifdef UHD_HAS_DEVICE_FILTER
     const uhd::device_addrs_t addrs = uhd::device::find(kwargsToDict(args), uhd::device::USRP);
-    #else
-    const uhd::device_addrs_t addrs = uhd::device::find(kwargsToDict(args));
-    #endif
 
     //convert addrs to results
     std::vector<SoapySDR::Kwargs> results;
@@ -1151,11 +1120,7 @@ SoapySDR::Device *make_uhd(const SoapySDR::Kwargs &args)
         "Suggestion: install an ABI compatible version of UHD,\n"
         "or rebuild SoapySDR UHD support against this ABI version.\n"
     ) % UHD_VERSION_ABI_STRING % uhd::get_abi_string()));
-    #ifdef UHD_HAS_MSG_HPP
-    uhd::msg::register_handler(&SoapyUHDLogger);
-    #else
     uhd::log::add_logger("SoapyUHDDevice", &SoapyUHDLogger);
-    #endif
     return new SoapyUHDDevice(uhd::usrp::multi_usrp::make(kwargsToDict(args)), args);
 }
 
