@@ -102,38 +102,16 @@ else()
 endif()
 
 ########################################################################
-# Setup boost
-########################################################################
-MESSAGE(STATUS "Configuring Boost C++ Libraries...")
-
-if(UNIX AND NOT BOOST_ROOT AND EXISTS "/usr/lib64")
-    list(APPEND BOOST_LIBRARYDIR "/usr/lib64") #fedora 64-bit fix
-endif(UNIX AND NOT BOOST_ROOT AND EXISTS "/usr/lib64")
-
-find_package(Boost)
-
-if(NOT Boost_FOUND)
-    message(FATAL_ERROR "Boost not found -- required for Soapy UHD support")
-endif()
-
-ADD_DEFINITIONS(-DBOOST_ALL_DYN_LINK)
-
-include_directories(${Boost_INCLUDE_DIRS})
-link_directories(${Boost_LIBRARY_DIRS})
-
-message(STATUS "Boost include directories: ${Boost_INCLUDE_DIRS}")
-message(STATUS "Boost library directories: ${Boost_LIBRARY_DIRS}")
-message(STATUS "Boost libraries: ${Boost_LIBRARIES}")
-
-########################################################################
 # Build a Soapy module to support UHD devices
 ########################################################################
+# Boost is no longer linked directly; UHD's CMake config still pulls
+# Boost_INCLUDE_DIRS transitively for any UHD public headers that
+# template-instantiate boost types (e.g. uhd::dict in dict.ipp).
 SOAPY_SDR_MODULE_UTIL(
     TARGET uhdSupport
     SOURCES SoapyUHDDevice.cpp
     LIBRARIES
         ${UHD_LIBRARIES}
-        ${Boost_LIBRARIES}
 )
 
 ########################################################################
@@ -142,8 +120,7 @@ SOAPY_SDR_MODULE_UTIL(
 add_library(soapySupport MODULE UHDSoapyDevice.cpp)
 target_link_libraries(soapySupport
     ${UHD_LIBRARIES}
-    ${SoapySDR_LIBRARIES}
-    ${Boost_LIBRARIES})
+    ${SoapySDR_LIBRARIES})
 install(TARGETS soapySupport
     DESTINATION ${UHD_ROOT}/lib${LIB_SUFFIX}/uhd/modules
 )
