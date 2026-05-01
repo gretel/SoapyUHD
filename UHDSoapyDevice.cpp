@@ -33,7 +33,6 @@
 
 #include <boost/foreach.hpp>
 #include <boost/thread/mutex.hpp>
-#include <boost/bind.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/algorithm/string.hpp>
 
@@ -223,45 +222,45 @@ UHDSoapyDevice::UHDSoapyDevice(const uhd::device_addr_t &args)
 
     //the frontend mapping
     _tree->create<uhd::usrp::subdev_spec_t>(mb_path / "rx_subdev_spec")
-        .publish(boost::bind(&UHDSoapyDevice::get_frontend_mapping, this, SOAPY_SDR_RX))
-        .subscribe(boost::bind(&UHDSoapyDevice::set_frontend_mapping, this, SOAPY_SDR_RX, _1));
+        .publish([this]() { return get_frontend_mapping(SOAPY_SDR_RX); })
+        .subscribe([this](auto&& v) { return set_frontend_mapping(SOAPY_SDR_RX, std::forward<decltype(v)>(v)); });
     _tree->create<uhd::usrp::subdev_spec_t>(mb_path / "tx_subdev_spec")
-        .publish(boost::bind(&UHDSoapyDevice::get_frontend_mapping, this, SOAPY_SDR_TX))
-        .subscribe(boost::bind(&UHDSoapyDevice::set_frontend_mapping, this, SOAPY_SDR_TX, _1));
+        .publish([this]() { return get_frontend_mapping(SOAPY_SDR_TX); })
+        .subscribe([this](auto&& v) { return set_frontend_mapping(SOAPY_SDR_TX, std::forward<decltype(v)>(v)); });
 
     //timed command support
     _tree->create<uhd::time_spec_t>(mb_path / "time" / "cmd")
-        .subscribe(boost::bind(&UHDSoapyDevice::set_hardware_time, this, "CMD", _1));
+        .subscribe([this](auto&& v) { return set_hardware_time("CMD", std::forward<decltype(v)>(v)); });
     _tree->create<double>(mb_path / "tick_rate")
-        .publish(boost::bind(&SoapySDR::Device::getMasterClockRate, _device))
-        .subscribe(boost::bind(&SoapySDR::Device::setMasterClockRate, _device, _1));
+        .publish([d=_device]() { return d->getMasterClockRate(); })
+        .subscribe([d=_device](auto&& v) { return d->setMasterClockRate(std::forward<decltype(v)>(v)); });
 
     //hardware time support
     _tree->create<uhd::time_spec_t>(mb_path / "time" / "now")
-        .publish(boost::bind(&UHDSoapyDevice::get_hardware_time, this, ""))
-        .subscribe(boost::bind(&UHDSoapyDevice::set_hardware_time, this, "", _1));
+        .publish([this]() { return get_hardware_time(""); })
+        .subscribe([this](auto&& v) { return set_hardware_time("", std::forward<decltype(v)>(v)); });
     _tree->create<uhd::time_spec_t>(mb_path / "time" / "pps")
-        .publish(boost::bind(&UHDSoapyDevice::get_hardware_time, this, "PPS"))
-        .subscribe(boost::bind(&UHDSoapyDevice::set_hardware_time, this, "PPS", _1));
+        .publish([this]() { return get_hardware_time("PPS"); })
+        .subscribe([this](auto&& v) { return set_hardware_time("PPS", std::forward<decltype(v)>(v)); });
 
     //clock and time sources
     _tree->create<std::vector<std::string> >(mb_path / "clock_source"/ "options")
-        .publish(boost::bind(&SoapySDR::Device::listClockSources, _device));
+        .publish([d=_device]() { return d->listClockSources(); });
     _tree->create<std::string>(mb_path / "clock_source" / "value")
-        .publish(boost::bind(&SoapySDR::Device::getClockSource, _device))
-        .subscribe(boost::bind(&SoapySDR::Device::setClockSource, _device, _1));
+        .publish([d=_device]() { return d->getClockSource(); })
+        .subscribe([d=_device](auto&& v) { return d->setClockSource(std::forward<decltype(v)>(v)); });
     _tree->create<std::vector<std::string> >(mb_path / "time_source"/ "options")
-        .publish(boost::bind(&SoapySDR::Device::listTimeSources, _device));
+        .publish([d=_device]() { return d->listTimeSources(); });
     _tree->create<std::string>(mb_path / "time_source" / "value")
-        .publish(boost::bind(&SoapySDR::Device::getTimeSource, _device))
-        .subscribe(boost::bind(&SoapySDR::Device::setTimeSource, _device, _1));
+        .publish([d=_device]() { return d->getTimeSource(); })
+        .subscribe([d=_device](auto&& v) { return d->setTimeSource(std::forward<decltype(v)>(v)); });
 
     //mboard sensors
     _tree->create<int>(mb_path / "sensors"); //ensure this path exists
     for(const std::string &name : _device->listSensors())
     {
         _tree->create<uhd::sensor_value_t>(mb_path / "sensors" / name)
-            .publish(boost::bind(&UHDSoapyDevice::get_mboard_sensor, this, name));
+            .publish([this, name]() { return get_mboard_sensor(name); });
     }
 
     //gpio banks
@@ -279,8 +278,8 @@ UHDSoapyDevice::UHDSoapyDevice(const uhd::device_addr_t &args)
         for(const std::string &attr : attrs)
         {
             _tree->create<boost::uint32_t>(mb_path / "gpio" / bank / attr)
-                .subscribe(boost::bind(&UHDSoapyDevice::set_gpio_attr, this, bank, attr, _1))
-                .publish(boost::bind(&UHDSoapyDevice::get_gpio_attr, this, bank, attr));
+                .subscribe([this, bank, attr](auto&& v) { return set_gpio_attr(bank, attr, std::forward<decltype(v)>(v)); })
+                .publish([this, bank, attr]() { return get_gpio_attr(bank, attr); });
         }
     }
 
@@ -341,10 +340,10 @@ void UHDSoapyDevice::setupChannelHooks(const int dir, const size_t chan, const s
 
     //samp rate
     _tree->create<uhd::meta_range_t>(dsp_path / "rate" / "range")
-        .publish(boost::bind(&UHDSoapyDevice::get_rate_range, this, dir, chan));
+        .publish([this, dir, chan]() { return get_rate_range(dir, chan); });
     _tree->create<double>(dsp_path / "rate" / "value")
-        .publish(boost::bind(&SoapySDR::Device::getSampleRate, _device, dir, chan))
-        .subscribe(boost::bind(&UHDSoapyDevice::set_sample_rate, this, dir, chan, _1));
+        .publish([d=_device, dir, chan]() { return d->getSampleRate(dir, chan); })
+        .subscribe([this, dir, chan](auto&& v) { return set_sample_rate(dir, chan, std::forward<decltype(v)>(v)); });
 
     //dsp freq (when there is no tunable cordic)
     if (bbCompName.empty())
@@ -356,17 +355,17 @@ void UHDSoapyDevice::setupChannelHooks(const int dir, const size_t chan, const s
     else
     {
         _tree->create<double>(dsp_path / "freq" / "value")
-            .publish(boost::bind(&SoapySDR::Device::getFrequency, _device, dir, chan, bbCompName))
-            .subscribe(boost::bind(&UHDSoapyDevice::set_frequency, this, dir, chan, bbCompName, _1));
+            .publish([d=_device, dir, chan, bbCompName]() { return d->getFrequency(dir, chan, bbCompName); })
+            .subscribe([this, dir, chan, bbCompName](auto&& v) { return set_frequency(dir, chan, bbCompName, std::forward<decltype(v)>(v)); });
         _tree->create<uhd::meta_range_t>(dsp_path / "freq" / "range")
-            .publish(boost::bind(&UHDSoapyDevice::get_freq_range, this, dir, chan, bbCompName));
+            .publish([this, dir, chan, bbCompName]() { return get_freq_range(dir, chan, bbCompName); });
     }
 
     //old style stream cmd
     if (dir == SOAPY_SDR_RX)
     {
         _tree->create<uhd::stream_cmd_t>(dsp_path / "stream_cmd")
-            .subscribe(boost::bind(&UHDSoapyDevice::old_issue_stream_cmd, this, chan, _1));
+            .subscribe([this, chan](auto&& v) { return old_issue_stream_cmd(chan, std::forward<decltype(v)>(v)); });
     }
 
     //frontend sensors
@@ -375,7 +374,7 @@ void UHDSoapyDevice::setupChannelHooks(const int dir, const size_t chan, const s
     {
         //install the sensor
         _tree->create<uhd::sensor_value_t>(rf_fe_path / "sensors" / name)
-            .publish(boost::bind(&UHDSoapyDevice::get_channel_sensor, this, dir, chan, name));
+            .publish([this, dir, chan, name]() { return get_channel_sensor(dir, chan, name); });
     }
 
     //dummy eeprom values
@@ -396,69 +395,69 @@ void UHDSoapyDevice::setupChannelHooks(const int dir, const size_t chan, const s
     for(const std::string &name : _device->listGains(dir, chan))
     {
         _tree->create<uhd::meta_range_t>(rf_fe_path / "gains" / name / "range")
-            .publish(boost::bind(&UHDSoapyDevice::get_gain_range, this, dir, chan, name));
+            .publish([this, dir, chan, name]() { return get_gain_range(dir, chan, name); });
         _tree->create<double>(rf_fe_path / "gains" / name / "value")
-            .publish(boost::bind(&SoapySDR::Device::getGain, _device, dir, chan, name))
-            .subscribe(boost::bind(&SoapySDR::Device::setGain, _device, dir, chan, name, _1));
+            .publish([d=_device, dir, chan, name]() { return d->getGain(dir, chan, name); })
+            .subscribe([d=_device, dir, chan, name](auto&& v) { return d->setGain(dir, chan, name, std::forward<decltype(v)>(v)); });
     }
 
     //agc
     _tree->create<bool>(rf_fe_path / "gain" / "agc" / "enable")
-        .publish(boost::bind(&SoapySDR::Device::getGainMode, _device, dir, chan))
-        .subscribe(boost::bind(&SoapySDR::Device::setGainMode, _device, dir, chan, _1));
+        .publish([d=_device, dir, chan]() { return d->getGainMode(dir, chan); })
+        .subscribe([d=_device, dir, chan](auto&& v) { return d->setGainMode(dir, chan, std::forward<decltype(v)>(v)); });
 
     //freq
     _tree->create<double>(rf_fe_path / "freq" / "value")
-        .publish(boost::bind(&SoapySDR::Device::getFrequency, _device, dir, chan, rfCompName))
-        .subscribe(boost::bind(&UHDSoapyDevice::set_frequency, this, dir, chan, rfCompName, _1));
+        .publish([d=_device, dir, chan, rfCompName]() { return d->getFrequency(dir, chan, rfCompName); })
+        .subscribe([this, dir, chan, rfCompName](auto&& v) { return set_frequency(dir, chan, rfCompName, std::forward<decltype(v)>(v)); });
     _tree->create<uhd::meta_range_t>(rf_fe_path / "freq" / "range")
-        .publish(boost::bind(&UHDSoapyDevice::get_freq_range, this, dir, chan, rfCompName));
+        .publish([this, dir, chan, rfCompName]() { return get_freq_range(dir, chan, rfCompName); });
     _tree->create<bool>(rf_fe_path / "use_lo_offset").set(false);
     _tree->create<uhd::device_addr_t>(rf_fe_path / "tune_args")
-        .subscribe(boost::bind(&UHDSoapyDevice::stash_tune_args, this, dir, chan, _1));
+        .subscribe([this, dir, chan](auto&& v) { return stash_tune_args(dir, chan, std::forward<decltype(v)>(v)); });
 
     //ant
     _tree->create<std::vector<std::string> >(rf_fe_path / "antenna" / "options")
-        .publish(boost::bind(&SoapySDR::Device::listAntennas, _device, dir, chan));
+        .publish([d=_device, dir, chan]() { return d->listAntennas(dir, chan); });
     _tree->create<std::string>(rf_fe_path / "antenna" / "value")
-        .publish(boost::bind(&SoapySDR::Device::getAntenna, _device, dir, chan))
-        .subscribe(boost::bind(&SoapySDR::Device::setAntenna, _device, dir, chan, _1));
+        .publish([d=_device, dir, chan]() { return d->getAntenna(dir, chan); })
+        .subscribe([d=_device, dir, chan](auto&& v) { return d->setAntenna(dir, chan, std::forward<decltype(v)>(v)); });
 
     //bw
     _tree->create<double>(rf_fe_path / "bandwidth" / "value")
-        .publish(boost::bind(&SoapySDR::Device::getBandwidth, _device, dir, chan))
-        .subscribe(boost::bind(&SoapySDR::Device::setBandwidth, _device, dir, chan, _1));
+        .publish([d=_device, dir, chan]() { return d->getBandwidth(dir, chan); })
+        .subscribe([d=_device, dir, chan](auto&& v) { return d->setBandwidth(dir, chan, std::forward<decltype(v)>(v)); });
     _tree->create<uhd::meta_range_t>(rf_fe_path / "bandwidth" / "range")
-        .publish(boost::bind(&UHDSoapyDevice::get_bw_range, this, dir, chan));
+        .publish([this, dir, chan]() { return get_bw_range(dir, chan); });
 
     //corrections
     if (_device->hasDCOffsetMode(dir, chan))
     {
         _tree->create<bool>(rf_fe_path / "dc_offset" / "enable")
-            .publish(boost::bind(&SoapySDR::Device::getDCOffsetMode, _device, dir, chan))
-            .subscribe(boost::bind(&SoapySDR::Device::setDCOffsetMode, _device, dir, chan, _1));
+            .publish([d=_device, dir, chan]() { return d->getDCOffsetMode(dir, chan); })
+            .subscribe([d=_device, dir, chan](auto&& v) { return d->setDCOffsetMode(dir, chan, std::forward<decltype(v)>(v)); });
     }
 
     if (_device->hasDCOffset(dir, chan))
     {
         _tree->create<std::complex<double>>(rf_fe_path / "dc_offset" / "value")
-            .publish(boost::bind(&SoapySDR::Device::getDCOffset, _device, dir, chan))
-            .subscribe(boost::bind(&SoapySDR::Device::setDCOffset, _device, dir, chan, _1));
+            .publish([d=_device, dir, chan]() { return d->getDCOffset(dir, chan); })
+            .subscribe([d=_device, dir, chan](auto&& v) { return d->setDCOffset(dir, chan, std::forward<decltype(v)>(v)); });
     }
 
     if (_device->hasIQBalance(dir, chan))
     {
         _tree->create<std::complex<double>>(rf_fe_path / "iq_balance" / "value")
-            .publish(boost::bind(&SoapySDR::Device::getIQBalance, _device, dir, chan))
-            .subscribe(boost::bind(&SoapySDR::Device::setIQBalance, _device, dir, chan, _1));
+            .publish([d=_device, dir, chan]() { return d->getIQBalance(dir, chan); })
+            .subscribe([d=_device, dir, chan](auto&& v) { return d->setIQBalance(dir, chan, std::forward<decltype(v)>(v)); });
     }
 
     #ifdef SOAPY_SDR_API_HAS_IQ_BALANCE_MODE
     if (_device->hasIQBalanceMode(dir, chan))
     {
         _tree->create<bool>(rf_fe_path / "iq_balance" / "enable")
-            .publish(boost::bind(&SoapySDR::Device::getIQBalanceMode, _device, dir, chan))
-            .subscribe(boost::bind(&SoapySDR::Device::setIQBalanceMode, _device, dir, chan, _1));
+            .publish([d=_device, dir, chan]() { return d->getIQBalanceMode(dir, chan); })
+            .subscribe([d=_device, dir, chan](auto&& v) { return d->setIQBalanceMode(dir, chan, std::forward<decltype(v)>(v)); });
     }
     #endif
 }
