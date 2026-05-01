@@ -31,10 +31,10 @@
 #include <SoapySDR/Device.hpp>
 #include <SoapySDR/Logger.hpp>
 
-#include <boost/foreach.hpp>
-#include <boost/thread/mutex.hpp>
+#include <cstdint>
+#include <mutex>
+
 #include <boost/weak_ptr.hpp>
-#include <boost/algorithm/string.hpp>
 
 #include <algorithm>
 #include <cctype>
@@ -158,7 +158,7 @@ public:
     void setupChannelHooks(const int dir, const size_t chan, const std::string &dirName, const std::string &chName);
     void setupFakeChannelHooks(const int dir, const size_t chan, const std::string &dirName, const std::string &chName);
 
-    void set_gpio_attr(const std::string &bank, const std::string &attr, const boost::uint32_t value)
+    void set_gpio_attr(const std::string &bank, const std::string &attr, const std::uint32_t value)
     {
         if (attr == "READBACK") return; //readback is never written
         if (attr == "OUT") return _device->writeGPIO(bank, value);
@@ -166,7 +166,7 @@ public:
         return _device->writeGPIO(bank+":"+attr, value);
     }
 
-    boost::uint32_t get_gpio_attr(const std::string &bank, const std::string &attr)
+    std::uint32_t get_gpio_attr(const std::string &bank, const std::string &attr)
     {
         if (attr == "READBACK") return _device->readGPIO(bank);
         if (attr == "OUT") return _device->readGPIO(bank); //usually OUT is cached output setting
@@ -191,16 +191,16 @@ private:
 /***********************************************************************
  * Factory and initialization
  **********************************************************************/
-static boost::mutex &suMutexMaker(void)
+static std::mutex &suMutexMaker(void)
 {
-    static boost::mutex m;
+    static std::mutex m;
     return m;
 }
 
 UHDSoapyDevice::UHDSoapyDevice(const uhd::device_addr_t &args)
 {
     {
-        boost::mutex::scoped_lock l(suMutexMaker());
+        std::lock_guard<std::mutex> l(suMutexMaker());
         _device = SoapySDR::Device::make(dictToKwargs(args));
     }
 
@@ -277,7 +277,7 @@ UHDSoapyDevice::UHDSoapyDevice(const uhd::device_addr_t &args)
         attrs.push_back("READBACK");
         for(const std::string &attr : attrs)
         {
-            _tree->create<boost::uint32_t>(mb_path / "gpio" / bank / attr)
+            _tree->create<std::uint32_t>(mb_path / "gpio" / bank / attr)
                 .subscribe([this, bank, attr](auto&& v) { return set_gpio_attr(bank, attr, std::forward<decltype(v)>(v)); })
                 .publish([this, bank, attr]() { return get_gpio_attr(bank, attr); });
         }
@@ -289,7 +289,7 @@ UHDSoapyDevice::UHDSoapyDevice(const uhd::device_addr_t &args)
 
 UHDSoapyDevice::~UHDSoapyDevice(void)
 {
-    boost::mutex::scoped_lock l(suMutexMaker());
+    std::lock_guard<std::mutex> l(suMutexMaker());
     SoapySDR::Device::unmake(_device);
 }
 
