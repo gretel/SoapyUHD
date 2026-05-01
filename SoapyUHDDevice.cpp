@@ -613,13 +613,13 @@ public:
 
         if (args.count("OFFSET") != 0)
         {
-            tr = uhd::tune_request_t(frequency, boost::lexical_cast<double>(args.at("OFFSET")));
+            tr = uhd::tune_request_t(frequency, std::stod(args.at("OFFSET")));
         }
         if (args.count("RF") != 0)
         {
             try
             {
-                tr.rf_freq = boost::lexical_cast<double>(args.at("RF"));
+                tr.rf_freq = std::stod(args.at("RF"));
                 tr.rf_freq_policy = uhd::tune_request_t::POLICY_MANUAL;
             }
             catch (...)
@@ -631,7 +631,7 @@ public:
         {
             try
             {
-                tr.dsp_freq = boost::lexical_cast<double>(args.at("BB"));
+                tr.dsp_freq = std::stod(args.at("BB"));
                 tr.dsp_freq_policy = uhd::tune_request_t::POLICY_MANUAL;
             }
             catch (...)
