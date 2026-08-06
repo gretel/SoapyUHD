@@ -63,6 +63,7 @@ endif()
 message(STATUS "UHD root directory: ${UHD_ROOT}")
 message(STATUS "UHD include directories: ${UHD_INCLUDE_DIRS}")
 message(STATUS "UHD libraries: ${UHD_LIBRARIES}")
+message(STATUS "UHD version: ${UHD_VERSION}")
 
 set(UHD_FEATURE_DEFS "")
 
