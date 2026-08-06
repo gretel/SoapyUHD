@@ -20,6 +20,7 @@
 #include <uhd/usrp/multi_usrp.hpp>
 #include <uhd/property_tree.hpp>
 #include <uhd/version.hpp>
+#include <boost/lexical_cast.hpp>
 #include <cctype>
 #include <iostream>
 
@@ -341,7 +342,7 @@ public:
         case uhd::rx_metadata_t::ERROR_CODE_TIMEOUT: return SOAPY_SDR_TIMEOUT;
         case uhd::rx_metadata_t::ERROR_CODE_BAD_PACKET: return SOAPY_SDR_CORRUPTION;
         case uhd::rx_metadata_t::ERROR_CODE_ALIGNMENT: return SOAPY_SDR_CORRUPTION;
-        case uhd::rx_metadata_t::ERROR_CODE_LATE_COMMAND: return SOAPY_SDR_STREAM_ERROR;
+        case uhd::rx_metadata_t::ERROR_CODE_LATE_COMMAND: return SOAPY_SDR_TIME_ERROR;
         case uhd::rx_metadata_t::ERROR_CODE_BROKEN_CHAIN: return SOAPY_SDR_STREAM_ERROR;
         }
         return ret;
@@ -529,7 +530,7 @@ public:
             return __doesMBoardFEPropTreeEntryExist(dir, channel, "iq_balance/enable");
         }
 
-        return SoapySDR::Device::hasDCOffsetMode(dir, channel);
+        return SoapySDR::Device::hasIQBalanceMode(dir, channel);
     }
 
     void setIQBalanceMode(const int dir, const size_t channel, const bool automatic)

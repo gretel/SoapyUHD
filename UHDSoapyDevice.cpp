@@ -35,6 +35,7 @@
 #include <boost/format.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/bind.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/algorithm/string.hpp>
 
@@ -721,7 +722,6 @@ private:
     const size_t _nchan;
     const size_t _elemSize;
     std::vector<void *> _offsetBuffs;
-    bool _doErrorOnNextRecv;
     bool _nextTimeValid;
     uhd::time_spec_t _nextTime;
     const double &_sampRate;
